@@ -1,5 +1,6 @@
 // index.jsx
 import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './styles.css';
 import axios from 'axios';
 
@@ -43,11 +44,20 @@ const inventoryService = {
 };
 
 const AperturaCaja = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isAnimationStopped, setIsAnimationStopped] = useState(false);
-  
+
+  const { boxData, items } = location.state || {};
+
   useEffect(() => {
+    if (!boxData || !items) {
+      navigate('/'); // Redirige al inicio si no hay datos
+      return;
+    }
     window.scrollTo(0, 0);
   }, []);
+
 
   const cardsJSON = [
     { id: "tarjeta1", name: "AK47 MADERA AZUL", imgArma: "/img/akruleta.png", animationDelay:"0s", boxShadow: "0px 0px 10px rgb(0, 102, 255)"},
@@ -67,6 +77,7 @@ const AperturaCaja = () => {
     { id: "tarjeta15", name: "RECORTADA BESOS", imgArma: "/img/recortada.png", animationDelay:"-3.5s", boxShadow: "0px 0px 10px rgb(255, 0, 0)"},
     { id: "tarjeta16", name: "M4A1 BLANCO NUCLEAR", imgArma: "/img/M4A1.png", animationDelay:"-3.75s", boxShadow: "0px 0px 10px rgb(255, 0, 0)"}
   ];
+
 
   useEffect(() => {
     const cards = document.querySelectorAll(".tarjeta");
@@ -111,7 +122,7 @@ const AperturaCaja = () => {
           if (zIndex > highestZIndex) {
             highestZIndex = zIndex;
             closestCard = card;
-            selectedCardData = cardsJSON[index];
+            selectedCardData = items[index];
           }
         });
 
@@ -132,7 +143,7 @@ const AperturaCaja = () => {
     });
 
     updateCards();
-  }, []);
+  }, [items]);
 
   const determinarRareza = (boxShadow) => {
     if (boxShadow.includes('rgb(255, 0, 0)')) return 'Covert'; // Rojo
@@ -168,9 +179,9 @@ const AperturaCaja = () => {
         <div class="popup-content">  
           <h2 id="popup-titulo">${cardData.name}</h2>
           <div id="popup-imagen-container">
-            <img id="popup-imagen" src="${cardData.imgArma}" alt="Imagen de la carta">
+            <img id="popup-imagen" src="${cardData.image_url}" alt="Imagen del item">
           </div>
-          <p id="popup-descripcion"></p>
+          <p id="popup-descripcion">Rareza: ${cardData.rarity}</p>
           <button onclick="window.location.href='/'">Salir</button>
         </div>
       `;
@@ -197,7 +208,7 @@ const AperturaCaja = () => {
   return (
     <div className="apertura-caja">
       <div className="nombreCaja">
-        <h1 className="kenia-font">CAJA GAMMA</h1>
+        <h1 className="kenia-font">{boxData?.name || 'CAJA'}</h1>
       </div>
 
       <div className="contenidoSuperior">
@@ -206,20 +217,19 @@ const AperturaCaja = () => {
       </div>
 
       <div className="container">
-        {cardsJSON.sort(() => Math.random() - 0.5).map((card) => (
+        {items?.map((item) => (
           <div 
-            key={card.id} 
+            key={item.id} 
             className="tarjeta" 
             style={{
-              backgroundImage: `url(${card.imgArma})`,
+              backgroundImage: `url(${item.image_url})`,
               backgroundSize: 'contain',
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
-              boxShadow: card.boxShadow,
-              animationDelay: card.animationDelay
+              boxShadow: getRarityShadow(item.rarity),
             }}
           >
-            <h3>{card.name}</h3>
+            <h3>{item.name}</h3>
           </div>
         ))}
       </div>
@@ -232,6 +242,20 @@ const AperturaCaja = () => {
       <div id="popup" className="popup"></div>
     </div>
   );
+};
+
+const getRarityShadow = (rarity) => {
+  const shadows = {
+    'common': '0px 0px 10px rgb(128, 128, 128)',
+    'uncommon': '0px 0px 10px rgb(0, 102, 255)',
+    'rare': '0px 0px 10px rgb(128, 0, 255)',
+    'epic': '0px 0px 10px rgb(255, 0, 255)',
+    'legendary': '0px 0px 10px rgb(255, 166, 0)',
+    'mythical': '0px 0px 10px rgb(255, 0, 0)',
+    'ancient': '0px 0px 10px rgb(255, 255, 0)',
+    'default': '0px 0px 10px rgb(128, 128, 128)'
+  };
+  return shadows[rarity?.toLowerCase()] || shadows.default;
 };
 
 export default AperturaCaja;
